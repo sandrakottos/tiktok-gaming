@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Gaming Feed</title>
+    
+    <!-- Preconnect to game hosts for instant first swipe -->
+    <link rel="preconnect" href="https://snakegame123.vercel.app" crossorigin>
+    <link rel="preconnect" href="https://flappybird3.vercel.app" crossorigin>
+    <link rel="preconnect" href="https://plane-sable.vercel.app" crossorigin>
+    <link rel="preconnect" href="https://hitball-game.vercel.app" crossorigin>
+    <link rel="preconnect" href="https://tower-block-game.vercel.app" crossorigin>
+    
+    <!-- DNS prefetch as fallback -->
+    <link rel="dns-prefetch" href="https://snakegame123.vercel.app">
+    <link rel="dns-prefetch" href="https://flappybird3.vercel.app">
+    <link rel="dns-prefetch" href="https://plane-sable.vercel.app">
+    <link rel="dns-prefetch" href="https://hitball-game.vercel.app">
+    <link rel="dns-prefetch" href="https://tower-block-game.vercel.app">
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EPGJR8Y5XE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-EPGJR8Y5XE', {
+        anonymize_ip: true,
+        cookie_flags: 'SameSite=None;Secure'
+      });
+    </script>
+    
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "tnyu76yu2z");
+    </script>
+</head>
+<body>
+    <!-- Header with logo -->
+    <header class="header">
+        <div class="logo">🎮 Gaming Feed</div>
+        <div class="game-counter">
+            <span id="current-game">1</span> / <span id="total-games">0</span>
+        </div>
+    </header>
+
+    <!-- Main scroll container -->
+    <div class="scroll-container" id="scrollContainer">
+        <!-- Games will be dynamically loaded here -->
+    </div>
+
+    <!-- Loading indicator -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading games...</p>
+    </div>
+
+    <!-- Navigation hints -->
+    <div class="scroll-hint" id="scrollHint">
+        <div class="arrow-down">↓</div>
+        <p>Swipe to explore</p>
+    </div>
+
+    <!-- Game info overlay -->
+    <div class="game-info" id="gameInfo">
+        <h3 id="gameTitle">Game Title</h3>
+        <p id="gameDescription">Swipe up or down to switch games</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

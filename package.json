@@ -1,0 +1,20 @@
+{
+  "name": "tiktok-gaming",
+  "version": "1.0.0",
+  "description": "TikTok-style gaming website with vertical scrolling",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8000 -c-1",
+    "deploy": "vercel"
+  },
+  "keywords": [
+    "gaming",
+    "tiktok",
+    "mobile",
+    "vertical-scroll",
+    "iframe"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

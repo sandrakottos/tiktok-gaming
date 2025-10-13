@@ -1,0 +1,624 @@
+/* Premium Design System Variables */
+:root {
+    /* Color Palette - Dark Premium */
+    --color-bg-primary: #0a0a0b;
+    --color-bg-secondary: #121214;
+    --color-surface: #1a1a1d;
+    --color-surface-elevated: #222225;
+    
+    /* Brand Accent - Electric Blue */
+    --color-accent: #3b82f6;
+    --color-accent-hover: #2563eb;
+    --color-accent-subtle: rgba(59, 130, 246, 0.1);
+    
+    /* Neutrals */
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a1a1aa;
+    --color-text-tertiary: #52525b;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-focus: rgba(59, 130, 246, 0.4);
+    
+    /* Elevation System */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 24px -4px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.6);
+    
+    /* Border Radius System */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    
+    /* Spacing System */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 20px;
+    --space-2xl: 24px;
+    --space-3xl: 32px;
+    
+    /* Typography */
+    --font-body: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
+    --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
+    
+    /* Blur Effects */
+    --blur-sm: 8px;
+    --blur-md: 12px;
+    --blur-lg: 20px;
+    
+    /* Motion System - Refined Easing */
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    --duration-short: 200ms;
+    --duration-medium: 300ms;
+    --duration-long: 400ms;
+}
+
+/* Reduced motion override */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --duration-short: 0ms;
+        --duration-medium: 0ms;
+        --duration-long: 0ms;
+    }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Mobile optimizations */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: pan-y;
+    /* Subtle texture to avoid banding */
+    background-image: 
+        radial-gradient(at 40% 20%, rgba(59, 130, 246, 0.03) 0px, transparent 50%),
+        radial-gradient(at 80% 80%, rgba(59, 130, 246, 0.02) 0px, transparent 50%);
+}
+
+/* Premium Glassy Header with refined motion */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(18, 18, 20, 0.85);
+    backdrop-filter: blur(var(--blur-lg)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(180%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 var(--space-xl);
+    z-index: 1000;
+    border-bottom: 1px solid var(--color-border);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity var(--duration-medium) var(--ease-standard), 
+                transform var(--duration-medium) var(--ease-standard);
+    /* Subtle top glow */
+    box-shadow: 
+        0 1px 0 0 rgba(255, 255, 255, 0.03) inset,
+        var(--shadow-md);
+    /* GPU optimization for smooth hide/show */
+    will-change: opacity, transform;
+    contain: layout style;
+}
+
+.header.hidden {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+}
+
+.logo {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.game-counter {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 12px;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+#current-game {
+    color: var(--color-accent);
+    font-weight: 600;
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
+}
+
+/* Scroll container with dynamic viewport and refined motion */
+.scroll-container {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport - adapts to browser UI */
+    padding-top: 76px;
+    padding-bottom: var(--space-xl);
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    /* Performance optimizations */
+    will-change: scroll-position;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll-container {
+        scroll-behavior: auto;
+    }
+}
+
+/* Hide scrollbar but keep functionality */
+.scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Premium Device-like Game Card with dynamic viewport */
+.game-section {
+    height: calc(100vh - 120px);
+    height: calc(100dvh - 120px); /* Dynamic viewport prevents toolbar jitter */
+    min-height: calc(100vh - 120px);
+    min-height: calc(100dvh - 120px);
+    max-height: calc(100vh - 120px);
+    max-height: calc(100dvh - 120px);
+    width: 100%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    border-radius: var(--radius-2xl);
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+    /* Premium elevation with refined motion */
+    box-shadow: 
+        0 0 0 1px var(--color-border),
+        var(--shadow-lg),
+        0 0 60px -15px rgba(59, 130, 246, 0.1);
+    /* Hardware acceleration */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    isolation: isolate;
+    contain: layout style paint;
+    /* Smooth transitions for active state */
+    transition: transform var(--duration-medium) var(--ease-standard),
+                box-shadow var(--duration-medium) var(--ease-standard);
+}
+
+/* Active card subtle lift effect - "settle" feeling */
+.game-section.active {
+    transform: translateZ(0) translateY(-1px);
+    box-shadow: 
+        0 0 0 1px var(--color-border),
+        var(--shadow-xl),
+        0 0 80px -15px rgba(59, 130, 246, 0.2);
+}
+
+.game-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-2xl);
+    padding: 1px;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.06) 0%, 
+        rgba(255, 255, 255, 0) 50%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, 
+                  linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+/* Ghost section for endless scroll */
+.game-section[data-is-ghost="true"] {
+    opacity: 1;
+}
+
+/* Game iframe */
+.game-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: var(--color-bg-secondary);
+    border-radius: calc(var(--radius-2xl) - 2px);
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+/* Premium Loading Placeholder */
+.game-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, 
+        var(--color-bg-secondary) 0%, 
+        var(--color-surface) 100%);
+    border-radius: calc(var(--radius-2xl) - 2px);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Ambient animation */
+    background-size: 200% 200%;
+    animation: ambientGlow 3s ease infinite;
+}
+
+@keyframes ambientGlow {
+    0%, 100% { 
+        background-position: 0% 50%;
+    }
+    50% { 
+        background-position: 100% 50%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .game-placeholder {
+        animation: none;
+        background: var(--color-bg-secondary);
+    }
+}
+
+.placeholder-content {
+    text-align: center;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.placeholder-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto var(--space-lg);
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.placeholder-content h3 {
+    font-family: var(--font-display);
+    font-size: 15px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
+/* Premium skeleton loader (instant visual feedback) */
+.skeleton-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-2xl);
+}
+
+.skeleton-box {
+    background: linear-gradient(
+        90deg,
+        var(--color-surface) 0%,
+        var(--color-surface-elevated) 50%,
+        var(--color-surface) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-md);
+}
+
+.skeleton-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.skeleton-text {
+    width: 120px;
+    height: 16px;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-box {
+        animation: none;
+    }
+}
+
+/* Premium Bottom Fade Gradient */
+.scroll-container::after {
+    content: '';
+    display: block;
+    height: 80px;
+    background: linear-gradient(to top, 
+        var(--color-bg-primary) 0%,
+        rgba(10, 10, 11, 0.8) 40%,
+        transparent 100%);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 50;
+}
+
+/* Premium Loading Indicator with refined motion */
+.loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 999;
+    opacity: 1;
+    transition: opacity var(--duration-medium) var(--ease-standard);
+    padding: var(--space-2xl);
+    background: var(--color-surface-elevated);
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xl);
+}
+
+.loading.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto var(--space-lg);
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.loading p {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    letter-spacing: -0.01em;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Premium Scroll Hint with gentle motion */
+.scroll-hint {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 100;
+    opacity: 1;
+    transition: opacity var(--duration-long) var(--ease-standard);
+    pointer-events: none;
+}
+
+.scroll-hint.hidden {
+    opacity: 0;
+}
+
+.arrow-down {
+    font-size: 24px;
+    opacity: 0.6;
+    animation: gentleBounce 2.5s var(--ease-standard) infinite;
+}
+
+@keyframes gentleBounce {
+    0%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-6px);
+        opacity: 0.8;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arrow-down {
+        animation: none;
+        opacity: 0.6;
+    }
+}
+
+.scroll-hint p {
+    margin-top: var(--space-sm);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    letter-spacing: -0.01em;
+}
+
+/* Premium Game Info Panel with refined motion */
+.game-info {
+    position: fixed;
+    bottom: 100px;
+    left: var(--space-lg);
+    right: var(--space-lg);
+    background: var(--color-surface-elevated);
+    backdrop-filter: blur(var(--blur-lg)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(180%);
+    padding: var(--space-lg) var(--space-xl);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity var(--duration-medium) var(--ease-decelerate),
+                transform var(--duration-medium) var(--ease-decelerate);
+    pointer-events: none;
+    /* GPU optimization for smooth slide-up */
+    will-change: opacity, transform;
+    contain: layout style;
+}
+
+.game-info.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.game-info h3 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    margin-bottom: var(--space-xs);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.game-info p {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+}
+
+/* Premium Accent Badge */
+.game-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    background: var(--color-accent-subtle);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-sm);
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+    .scroll-container {
+        max-width: 480px;
+        margin: 0 auto;
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .header {
+        max-width: 480px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Accessibility Focus States */
+*:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.game-section:focus-within {
+    box-shadow: 
+        0 0 0 1px var(--color-border),
+        0 0 0 3px var(--color-border-focus),
+        var(--shadow-lg),
+        0 0 60px -15px rgba(59, 130, 246, 0.2);
+}
+
+/* Safe area handling for notched devices */
+@supports (padding: max(0px)) {
+    .header {
+        padding-left: max(var(--space-xl), env(safe-area-inset-left));
+        padding-right: max(var(--space-xl), env(safe-area-inset-right));
+        padding-top: env(safe-area-inset-top);
+        height: calc(64px + env(safe-area-inset-top));
+    }
+    
+    .scroll-container {
+        padding-top: calc(76px + env(safe-area-inset-top));
+        padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
+        padding-left: max(var(--space-md), env(safe-area-inset-left));
+        padding-right: max(var(--space-md), env(safe-area-inset-right));
+    }
+    
+    .game-info {
+        left: max(var(--space-lg), env(safe-area-inset-left));
+        right: max(var(--space-lg), env(safe-area-inset-right));
+        bottom: calc(100px + env(safe-area-inset-bottom));
+    }
+}
+
