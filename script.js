@@ -27,65 +27,56 @@ const GAMES = [
     }
 ];
 
-// ==================== ANALYTICS SETUP ====================
+// ==================== SIMPLIFIED ANALYTICS SETUP ====================
 
-// Generate anonymous session ID (persists during browser session)
-function getSessionId() {
-    let sessionId = sessionStorage.getItem('session_id');
-    if (!sessionId) {
-        sessionId = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-        sessionStorage.setItem('session_id', sessionId);
-    }
-    return sessionId;
-}
-
-// Unified analytics wrapper - tracks to both GA4 and Clarity
+// Simplified analytics - Only business-focused events
 const analytics = {
-    track(eventName, params = {}) {
-        const data = {
-            session_id: getSessionId(),
-            timestamp: Date.now(),
-            ...params
-        };
-
-        // Google Analytics 4
+    // Track when user scrolls to a new game (discovery)
+    trackGameScroll(gameName, position, totalViewed) {
         if (typeof gtag !== 'undefined') {
-            gtag('event', eventName, data);
+            gtag('event', 'game_scroll', {
+                game_name: gameName,
+                game_position: position,
+                session_games_viewed: totalViewed
+            });
         }
-
-        // Microsoft Clarity
-        if (typeof clarity !== 'undefined') {
-            try {
-                clarity('event', eventName);
-                // Set custom tags for filtering sessions
-                Object.entries(data).forEach(([key, value]) => {
-                    const stringValue = typeof value === 'object' 
-                        ? JSON.stringify(value) 
-                        : String(value);
-                    clarity('set', key, stringValue);
-                });
-            } catch (e) {
-                console.warn('Clarity error:', e);
-            }
+        console.log(`[Analytics] Game Scroll: ${gameName} (position ${position}, total viewed: ${totalViewed})`);
+    },
+    
+    // Track when user actually plays a game (10+ seconds engagement)
+    trackGamePlay(gameName, position, duration) {
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'game_play', {
+                game_name: gameName,
+                game_position: position,
+                play_duration: Math.round(duration)
+            });
         }
-
-        // Debug logging
-        console.log('[Analytics]', eventName, data);
+        console.log(`[Analytics] Game Play: ${gameName} (${Math.round(duration)}s)`);
+    },
+    
+    // Track session end (overall engagement)
+    trackSessionComplete(totalTime, gamesViewed, gamesPlayed, completedFeed) {
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'session_complete', {
+                total_time: Math.round(totalTime),
+                games_viewed: gamesViewed,
+                games_played: gamesPlayed,
+                completed_feed: completedFeed
+            });
+        }
+        console.log(`[Analytics] Session Complete: ${Math.round(totalTime)}s, viewed ${gamesViewed}, played ${gamesPlayed}, completed: ${completedFeed}`);
     }
 };
 
-// Track session start immediately
+// Session tracking state
 const sessionStartTime = Date.now();
-analytics.track('session_started', {
-    total_games: GAMES.length,
-    viewport_width: window.innerWidth,
-    viewport_height: window.innerHeight,
-    user_agent: navigator.userAgent,
-    platform: navigator.platform,
-    language: navigator.language
-});
+let gamesViewedInSession = new Set();
+let gamesPlayedInSession = new Set();
 
-// ==================== END ANALYTICS SETUP ====================
+// Note: page_view is tracked automatically by GA4
+
+// ==================== END SIMPLIFIED ANALYTICS SETUP ====================
 
 // DOM Elements
 const scrollContainer = document.getElementById('scrollContainer');
@@ -103,6 +94,8 @@ let currentGameIndex = 0;
 let isScrolling = false;
 let scrollTimeout;
 let loadedGames = new Set(); // Track which games have iframes loaded
+let activatedGames = new Set(); // Track which games have been activated (facade -> iframe)
+let playTrackingTimers = new Map(); // Track play analytics timers for cleanup
 let headerTimeout; // Track header hide timeout
 let headerVisible = true;
 let intersectionObserver = null; // Rock-solid viewport detection
@@ -122,18 +115,16 @@ function init() {
         scrollContainer.appendChild(section);
     });
     
-    // Aggressive preloading for instant first swipe
-    loadGame(0); // Load current immediately
+    // Prepare ALL game facades immediately (they're lightweight - just click handlers)
+    // This ensures every game is ready to activate on tap, no delays
+    GAMES.forEach((game, index) => {
+        loadGame(index);
+    });
     
-    // Preload next TWO games for instant swipe (warm feed)
-    if (GAMES.length > 1) {
-        // Next game loads almost immediately (100ms delay for current to start)
-        setTimeout(() => loadGame(1), 100);
-    }
-    if (GAMES.length > 2) {
-        // Game after that loads shortly after (keep feed warm)
-        setTimeout(() => loadGame(2), 300);
-    }
+    // Auto-activate first game for instant play
+    setTimeout(() => {
+        activateGame(0, 'initial_load'); // Auto-activate first game (no tap needed)
+    }, 100);
     
     // Hide loading (faster for perceived speed)
     setTimeout(() => {
@@ -160,8 +151,8 @@ function init() {
         }
     }, { passive: true });
     
-    // Initial game info
-    updateGameInfo(0);
+    // Initial game info (disabled - no overlay banner)
+    // updateGameInfo(0);
     
     // Hide hint after first interaction
     let hasScrolled = false;
@@ -207,38 +198,25 @@ function setupIntersectionObserver() {
                 section.classList.add('active');
                 activeGameSection = section;
                 
-                // ANALYTICS: Track game view
-                analytics.track('game_viewed', {
-                    game_title: GAMES[index].title,
-                    game_index: index,
-                    game_url: GAMES[index].url
-                });
+                // AUTO-ACTIVATE: If game isn't activated yet, activate it automatically
+                // This ensures games load when scrolled into view (no tap needed)
+                if (!activatedGames.has(index)) {
+                    console.log(`[Auto-activate] Game ${index + 1} came into view, activating...`);
+                    activateGame(index);
+                }
                 
-                // Update state and track game switch
+                // SIMPLIFIED ANALYTICS: Track game scroll (discovery)
+                gamesViewedInSession.add(index);
+                analytics.trackGameScroll(
+                    GAMES[index].title,
+                    index + 1,
+                    gamesViewedInSession.size
+                );
+                
+                // Update state
                 if (index !== currentGameIndex) {
-                    // ANALYTICS: Track time spent on previous game
-                    if (currentGameIndex >= 0) {
-                        const timeSpent = Date.now() - gameStartTime;
-                        analytics.track('game_time_spent', {
-                            game_title: GAMES[currentGameIndex].title,
-                            game_index: currentGameIndex,
-                            duration_ms: timeSpent,
-                            duration_seconds: Math.round(timeSpent / 1000)
-                        });
-                    }
-                    
-                    // ANALYTICS: Track the game switch
-                    if (currentGameIndex >= 0) {
-                        analytics.track('game_switched', {
-                            from_game: GAMES[currentGameIndex].title,
-                            from_index: currentGameIndex,
-                            to_game: GAMES[index].title,
-                            to_index: index
-                        });
-                    }
-                    
                     currentGameIndex = index;
-                    updateGameInfo(currentGameIndex);
+                    currentGameEl.textContent = index + 1; // Update counter for all games
                     gameStartTime = Date.now(); // Reset timer for new game
                 }
             } else {
@@ -255,29 +233,36 @@ function setupIntersectionObserver() {
     });
 }
 
-// Create empty game section (without iframe)
+// Create empty game section (with facade - loads iframe on interaction)
 function createEmptyGameSection(game, index) {
     const section = document.createElement('div');
     section.className = 'game-section';
     section.dataset.gameIndex = index;
     section.dataset.gameUrl = game.url;
     section.dataset.gameTitle = game.title;
+    section.dataset.activated = 'false'; // Track if facade has been activated
     
-    // Add placeholder
-    const placeholder = document.createElement('div');
-    placeholder.className = 'game-placeholder';
-    placeholder.innerHTML = `
-        <div class="placeholder-content">
-            <div class="placeholder-spinner"></div>
-            <h3>${game.title}</h3>
+    // Add facade (lightweight preview that loads iframe on tap)
+    const facade = document.createElement('div');
+    facade.className = 'game-facade';
+    facade.innerHTML = `
+        <div class="facade-content">
+            <div class="facade-icon">🎮</div>
+            <h3 class="facade-title">${game.title}</h3>
+            <p class="facade-description">${game.description}</p>
+            <div class="facade-play-button">
+                <div class="play-icon">▶</div>
+                <span>Tap to Play</span>
+            </div>
+            <div class="facade-hint">Game loads instantly on tap</div>
         </div>
     `;
-    section.appendChild(placeholder);
+    section.appendChild(facade);
     
     return section;
 }
 
-// Load game iframe into a section
+// Prepare game section (set up facade with click handler)
 function loadGame(index) {
     if (index < 0 || index >= GAMES.length || loadedGames.has(index)) {
         return; // Already loaded or invalid index
@@ -287,57 +272,182 @@ function loadGame(index) {
     const section = sections[index];
     const game = GAMES[index];
     
-    // Remove placeholder
-    const placeholder = section.querySelector('.game-placeholder');
-    if (placeholder) {
-        placeholder.remove();
+    // Set up click/tap handler to activate the game (convert facade to iframe)
+    const facade = section.querySelector('.game-facade');
+    if (facade && section.dataset.activated === 'false') {
+        facade.style.cursor = 'pointer';
+        
+        // Add click handler to activate game
+        const activateHandler = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log(`[User tap] Activating game ${index + 1}...`);
+            activateGame(index, 'user_interaction');
+        };
+        
+        facade.addEventListener('click', activateHandler, { once: true });
+        facade.addEventListener('touchstart', activateHandler, { once: true, passive: false });
     }
     
-    // ANALYTICS: Track load start with network info
+    loadedGames.add(index);
+    console.log(`Prepared game ${index + 1}: ${game.title} (facade ready)`);
+}
+
+// Activate game - convert facade to actual iframe (called on user interaction or auto-activate)
+function activateGame(index, trigger = 'auto') {
+    if (index < 0 || index >= GAMES.length || activatedGames.has(index)) {
+        return; // Already activated or invalid index
+    }
+    
+    const sections = document.querySelectorAll('.game-section');
+    const section = sections[index];
+    const game = GAMES[index];
+    
+    // Mark as activated
+    section.dataset.activated = 'true';
+    activatedGames.add(index);
+    
+    console.log(`[Game Activated] ${game.title} (trigger: ${trigger}, total in memory: ${activatedGames.size})`);
+    
+    // CASCADE PRELOAD: Activate adjacent games in background for instant transitions
+    // This makes scrolling feel instantaneous
+    setTimeout(() => {
+        if (index + 1 < GAMES.length && !activatedGames.has(index + 1)) {
+            console.log(`[Cascade] Preloading next game ${index + 2}...`);
+            activateGame(index + 1, 'preload');
+        }
+    }, 500); // Preload after 500ms delay
+    
+    setTimeout(() => {
+        if (index - 1 >= 0 && !activatedGames.has(index - 1)) {
+            console.log(`[Cascade] Preloading previous game ${index}...`);
+            activateGame(index - 1, 'preload');
+        }
+    }, 1000); // Preload previous game after 1s delay
+    
+    // SLIDING WINDOW MEMORY MANAGEMENT: Unload games outside centered window
+    // Keeps memory usage constant regardless of total game count
+    const WINDOW_SIZE = 7; // Keep 7 games in memory (current ± 3)
+    const HALF_WINDOW = Math.floor(WINDOW_SIZE / 2); // 3 games on each side
+    
+    setTimeout(() => {
+        const gamesToUnload = [];
+        
+        // Check all activated games and find ones outside the window
+        activatedGames.forEach(gameIndex => {
+            const distance = Math.abs(gameIndex - index);
+            
+            // If game is more than HALF_WINDOW positions away, mark for unload
+            if (distance > HALF_WINDOW) {
+                gamesToUnload.push(gameIndex);
+            }
+        });
+        
+        // Unload games outside the window
+        if (gamesToUnload.length > 0) {
+            console.log(`[Sliding Window] Current game: ${index + 1}, Window: [${Math.max(0, index - HALF_WINDOW) + 1}-${Math.min(GAMES.length - 1, index + HALF_WINDOW) + 1}]`);
+            console.log(`[Sliding Window] Unloading ${gamesToUnload.length} games: ${gamesToUnload.map(i => i + 1).join(', ')}`);
+            console.log(`[Memory] Before: ${activatedGames.size} games, After: ${activatedGames.size - gamesToUnload.length} games`);
+            
+            gamesToUnload.forEach(gameIndex => {
+                // Use RAF to avoid performance impact during scrolling
+                requestAnimationFrame(() => {
+                    if (!isScrolling) {
+                        unloadGame(gameIndex);
+                    }
+                });
+            });
+        }
+    }, 2000); // Wait 2 seconds before cleanup (allows smooth scrolling)
+    
+    // Remove facade
+    const facade = section.querySelector('.game-facade');
+    if (facade) {
+        facade.remove();
+    }
+    
+    // Show loading state
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'game-loading-overlay';
+    loadingOverlay.innerHTML = `
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading ${game.title}...</p>
+        </div>
+    `;
+    section.appendChild(loadingOverlay);
+    
+    // Performance tracking (console only - for debugging)
     const loadStartTime = performance.now();
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     
-    analytics.track('game_load_start', {
-        game_title: game.title,
-        game_index: index,
-        game_url: game.url,
-        network_type: connection?.effectiveType || 'unknown',
-        downlink_mbps: connection?.downlink || null
-    });
-    
-    // Create and add iframe
+    // Create and add iframe with lazy loading
     const iframe = document.createElement('iframe');
     iframe.className = 'game-frame';
     iframe.src = game.url;
+    iframe.loading = 'lazy'; // Native lazy loading
     iframe.allow = "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture";
     iframe.allowFullscreen = true;
     
-    // ANALYTICS: Track load completion
+    // Track load completion (console only)
     iframe.onload = () => {
         const loadDuration = Math.round(performance.now() - loadStartTime);
-        analytics.track('game_load_complete', {
-            game_title: game.title,
-            game_index: index,
-            duration_ms: loadDuration,
-            duration_seconds: (loadDuration / 1000).toFixed(2)
-        });
-        
         console.log(`[Performance] ${game.title} loaded in ${loadDuration}ms`);
+        
+        // Remove loading overlay
+        if (loadingOverlay && loadingOverlay.parentNode) {
+            loadingOverlay.remove();
+        }
+        
+        // SIMPLIFIED ANALYTICS: Track play engagement (10+ seconds)
+        // Only track if user stays on game for 10+ seconds
+        let playTracked = false;
+        const playStartTime = Date.now();
+        
+        // Clear any existing timer for this game (in case it's reloaded)
+        if (playTrackingTimers.has(index)) {
+            clearTimeout(playTrackingTimers.get(index));
+        }
+        
+        // Set new timer and store it for cleanup
+        const timerId = setTimeout(() => {
+            // Check if game is still active and user hasn't navigated away
+            if (!playTracked && 
+                activeGameSection === section && 
+                !document.hidden) {
+                
+                const playDuration = (Date.now() - playStartTime) / 1000;
+                
+                // Track as "played" if 10+ seconds
+                if (playDuration >= 10) {
+                    gamesPlayedInSession.add(index);
+                    analytics.trackGamePlay(
+                        game.title,
+                        index + 1,
+                        playDuration
+                    );
+                    playTracked = true;
+                }
+            }
+            // Clean up timer reference
+            playTrackingTimers.delete(index);
+        }, 10000); // 10 second threshold for engagement
+        
+        // Store timer ID for cleanup
+        playTrackingTimers.set(index, timerId);
     };
     
-    // ANALYTICS: Track load errors
+    // Track load errors (console only)
     iframe.onerror = () => {
         const loadDuration = Math.round(performance.now() - loadStartTime);
-        analytics.track('game_load_error', {
-            game_title: game.title,
-            game_index: index,
-            duration_ms: loadDuration
-        });
-        
         console.error(`[Error] ${game.title} failed to load after ${loadDuration}ms`);
         
+        // Remove loading overlay
+        if (loadingOverlay && loadingOverlay.parentNode) {
+            loadingOverlay.remove();
+        }
+        
         section.innerHTML = `
-            <div style="text-align: center; padding: 20px;">
+            <div style="text-align: center; padding: 20px; color: white;">
                 <h2>⚠️ Unable to load game</h2>
                 <p>${game.title}</p>
                 <p style="margin-top: 10px; color: rgba(255,255,255,0.6);">Check the game URL</p>
@@ -346,12 +456,11 @@ function loadGame(index) {
     };
     
     section.appendChild(iframe);
-    loadedGames.add(index);
     
-    console.log(`Loaded game ${index + 1}: ${game.title}`);
+    console.log(`Activated game ${index + 1}: ${game.title} (iframe loading)`);
 }
 
-// Unload game iframe from a section
+// Unload game iframe from a section (convert back to facade if needed)
 function unloadGame(index) {
     if (index < 0 || index >= GAMES.length || !loadedGames.has(index)) {
         return; // Not loaded or invalid index
@@ -361,26 +470,64 @@ function unloadGame(index) {
     const section = sections[index];
     const game = GAMES[index];
     
-    // Remove iframe
-    const iframe = section.querySelector('.game-frame');
-    if (iframe) {
-        iframe.remove();
+    // Only unload if it's been activated (has iframe)
+    if (activatedGames.has(index)) {
+        // Clear play tracking timer if it exists (performance optimization)
+        if (playTrackingTimers.has(index)) {
+            clearTimeout(playTrackingTimers.get(index));
+            playTrackingTimers.delete(index);
+        }
+        
+        // Remove iframe
+        const iframe = section.querySelector('.game-frame');
+        if (iframe) {
+            iframe.remove();
+        }
+        
+        // Remove loading overlay if present
+        const loadingOverlay = section.querySelector('.game-loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.remove();
+        }
+        
+        // Add facade back
+        const facade = document.createElement('div');
+        facade.className = 'game-facade';
+        facade.style.cursor = 'pointer';
+        facade.innerHTML = `
+            <div class="facade-content">
+                <div class="facade-icon">🎮</div>
+                <h3 class="facade-title">${game.title}</h3>
+                <p class="facade-description">${game.description}</p>
+                <div class="facade-play-button">
+                    <div class="play-icon">▶</div>
+                    <span>Tap to Play</span>
+                </div>
+                <div class="facade-hint">Game loads instantly on tap</div>
+            </div>
+        `;
+        section.appendChild(facade);
+        
+        // Re-attach click handler to the new facade
+        const activateHandler = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log(`[User tap] Re-activating game ${index + 1}...`);
+            activateGame(index, 'user_interaction');
+        };
+        
+        facade.addEventListener('click', activateHandler, { once: true });
+        facade.addEventListener('touchstart', activateHandler, { once: true, passive: false });
+        
+        // Reset activation state
+        section.dataset.activated = 'false';
+        activatedGames.delete(index);
+        
+        console.log(`[Unloaded] Game ${index + 1}: ${game.title} (Memory: ${activatedGames.size} games)`);
     }
     
-    // Add placeholder back
-    const placeholder = document.createElement('div');
-    placeholder.className = 'game-placeholder';
-    placeholder.innerHTML = `
-        <div class="placeholder-content">
-            <div class="placeholder-spinner"></div>
-            <h3>${game.title}</h3>
-        </div>
-    `;
-    section.appendChild(placeholder);
-    
-    loadedGames.delete(index);
-    
-    console.log(`Unloaded game ${index + 1}: ${game.title}`);
+    // Keep it in loadedGames so it can be quickly reactivated
+    // Don't delete from loadedGames unless you want to remove the click handler too
 }
 
 
@@ -470,17 +617,19 @@ function manageGameLoading(currentIndex, previousIndex) {
     });
 }
 
-// Update game info overlay (optimized to prevent reflows)
+// Update game info overlay (only shows on first game as a guide)
 function updateGameInfo(index) {
     const game = GAMES[index];
+    
+    // Only show info overlay on first game (to guide users to swipe)
+    if (index !== 0) {
+        return; // Don't show overlay for other games
+    }
     
     // Use RAF to batch DOM updates (prevent reflows during scroll)
     requestAnimationFrame(() => {
         // Update content (batched)
-        gameTitle.innerHTML = `
-            ${game.title}
-            <span class="game-badge">NEW</span>
-        `;
+        gameTitle.textContent = game.title; // No "NEW" badge
         gameDescription.textContent = game.description;
         currentGameEl.textContent = index + 1;
         
@@ -490,10 +639,10 @@ function updateGameInfo(index) {
                 if (!isScrolling) { // Only show if not scrolling
                     gameInfo.classList.add('visible');
                     
-                    // Hide after 3 seconds
+                    // Hide after 4 seconds (give users time to read)
                     setTimeout(() => {
                         gameInfo.classList.remove('visible');
-                    }, 3000);
+                    }, 4000);
                 }
             }, 300);
         });
@@ -596,30 +745,18 @@ window.addEventListener('orientationchange', () => {
 // Start the app
 init();
 
-// ==================== ANALYTICS: SESSION END & VISIBILITY ====================
+// ==================== SIMPLIFIED ANALYTICS: SESSION END ====================
 
-// Track session end
+// Track session complete (overall engagement metrics)
 window.addEventListener('beforeunload', () => {
-    const sessionDuration = Date.now() - sessionStartTime;
-    analytics.track('session_ended', {
-        duration_ms: sessionDuration,
-        duration_seconds: Math.round(sessionDuration / 1000),
-        duration_minutes: (sessionDuration / 60000).toFixed(2)
-    });
-});
-
-// Track visibility changes (tab hidden/visible)
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        analytics.track('tab_hidden', {
-            current_game: GAMES[currentGameIndex]?.title || 'none',
-            game_index: currentGameIndex
-        });
-    } else {
-        analytics.track('tab_visible', {
-            current_game: GAMES[currentGameIndex]?.title || 'none',
-            game_index: currentGameIndex
-        });
-    }
+    const sessionDuration = (Date.now() - sessionStartTime) / 1000; // Convert to seconds
+    const completedFeed = gamesViewedInSession.has(GAMES.length - 1); // Did they reach the last game?
+    
+    analytics.trackSessionComplete(
+        sessionDuration,
+        gamesViewedInSession.size,
+        gamesPlayedInSession.size,
+        completedFeed
+    );
 });
 
