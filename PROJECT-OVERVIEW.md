@@ -17,12 +17,12 @@ A fully-functional TikTok-style gaming website optimized for mobile devices!
 ```
 tiktok-gaming/
 │
-├── 📄 index.html              ← Main HTML file (the app)
+├── 📄 index.html              ← Main HTML file (the app + analytics scripts)
 ├── 🎨 styles.css              ← All styling (mobile-optimized)
-├── ⚙️ script.js               ← Game loading logic (the brain)
+├── ⚙️ script.js               ← Game loading logic + analytics tracking
 │
 ├── 🚀 QUICKSTART.md           ← START HERE! Quick setup guide
-├── 📖 README.md               ← Full documentation
+├── 📖 README.md               ← Full documentation + analytics guide
 ├── 📱 MOBILE-OPTIMIZATION.md  ← How it works under the hood
 ├── 📋 PROJECT-OVERVIEW.md     ← This file!
 │
@@ -113,11 +113,13 @@ Done! 🎉
 
 - **HTML5**: Structure
 - **CSS3**: Styling + animations
-- **Vanilla JavaScript**: Game management
+- **Vanilla JavaScript**: Game management + analytics
 - **CSS Scroll Snap**: Smooth transitions
 - **Dynamic Iframes**: Game isolation
+- **Google Analytics 4**: User behavior tracking
+- **Microsoft Clarity**: Session recordings & heatmaps
 
-**No frameworks needed!** Pure, fast, and simple.
+**No frameworks needed!** Pure, fast, and simple with built-in analytics.
 
 ---
 
@@ -143,6 +145,14 @@ Done! 🎉
 - 🚀 One-command deploy
 - 🐛 Error handling
 - 📱 Mobile testing guide
+
+### Analytics & Insights
+- 📊 Google Analytics 4 integration
+- 🔍 Microsoft Clarity session recordings
+- 📈 Performance monitoring (game load times)
+- 🎯 User behavior tracking
+- 📱 Mobile engagement metrics
+- 🔒 Privacy-compliant (GDPR ready)
 
 ---
 
